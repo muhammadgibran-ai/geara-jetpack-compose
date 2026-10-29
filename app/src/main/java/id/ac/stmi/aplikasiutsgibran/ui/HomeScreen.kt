@@ -1,6 +1,7 @@
 package id.ac.stmi.aplikasiutsgibran.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,12 +13,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -856,15 +859,21 @@ fun FigmaNotificationDrawer(
     Box(
         modifier = Modifier
             .fillMaxHeight()
-            .width(310.dp)
+            .width(320.dp)
             .clip(RoundedCornerShape(topStart = 40.dp))
             .background(GearaOrange)
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        var expandedNotifId by remember { mutableStateOf<String?>(null) }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 20.dp)
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -876,38 +885,76 @@ fun FigmaNotificationDrawer(
                     Icon(Icons.Default.Notifications, contentDescription = null, tint = GearaOrange)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Notifikasi",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Column {
+                    Text(
+                        text = "Notifikasi",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Ketuk untuk melihat informasi",
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
-            Divider(color = Color.White.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.5f), thickness = 0.8.dp)
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Exactly 4 items from Figma 4.2 - A
+            // 4 Items with Dropdown
             DrawerNotifItem(
+                id = "catalog",
                 icon = Icons.Default.GridView,
-                text = "Suku cadang baru untuk kendaraan Anda.",
-                onClick = { onNavigate("catalog") }
+                title = "Suku cadang baru untuk kendaraan Anda.",
+                tag = "Produk Baru • 10 mnt lalu",
+                subtitle = "Koleksi Suku Cadang Resmi 2026",
+                description = "Suku cadang resmi untuk kendaraan Geara Anda kini tersedia dengan garansi pabrikan 12 bulan.",
+                actionText = "Buka Katalog",
+                isExpanded = expandedNotifId == "catalog",
+                onToggle = { expandedNotifId = if (expandedNotifId == "catalog") null else "catalog" },
+                onNavigate = { onNavigate("catalog") }
             )
+
             DrawerNotifItem(
+                id = "promo",
                 icon = Icons.Default.FavoriteBorder,
-                text = "Suku cadang favorit Anda sedang promo.",
-                onClick = { onNavigate("favorites") }
+                title = "Suku cadang favorit Anda sedang promo.",
+                tag = "Promo Kilat • 1 jam lalu",
+                subtitle = "Diskon Spesial Hingga 30%",
+                description = "Barang di daftar favorit Anda mendapatkan potongan harga spesial minggu ini.",
+                actionText = "Buka Favorit",
+                isExpanded = expandedNotifId == "promo",
+                onToggle = { expandedNotifId = if (expandedNotifId == "promo") null else "promo" },
+                onNavigate = { onNavigate("favorites") }
             )
+
             DrawerNotifItem(
+                id = "orders",
                 icon = Icons.Default.ShoppingBag,
-                text = "Pesanan Anda telah sampai",
-                onClick = { onNavigate("orders") }
+                title = "Pesanan Anda telah sampai",
+                tag = "Pengiriman Selesai • 3 jam lalu",
+                subtitle = "Pesanan #ORD-20261129-01",
+                description = "Paket suku cadang Anda telah sampai di alamat tujuan dan diterima dengan aman.",
+                actionText = "Cek Pesanan",
+                isExpanded = expandedNotifId == "orders",
+                onToggle = { expandedNotifId = if (expandedNotifId == "orders") null else "orders" },
+                onNavigate = { onNavigate("orders") }
             )
+
             DrawerNotifItem(
+                id = "tracking",
                 icon = Icons.Default.TwoWheeler,
-                text = "Kurir sedang dalam perjalanan",
-                onClick = { onNavigate("live_tracking/GR-8842109") }
+                title = "Kurir sedang dalam perjalanan",
+                tag = "Live Tracking • Baru saja",
+                subtitle = "Driver: Budi Santoso (Honda Vario)",
+                description = "Kurir sedang menuju lokasi Anda (Resi: GR-8842109). Estimasi tiba: 12 menit.",
+                actionText = "Lacak Posisi Kurir",
+                isExpanded = expandedNotifId == "tracking",
+                onToggle = { expandedNotifId = if (expandedNotifId == "tracking") null else "tracking" },
+                onNavigate = { onNavigate("live_tracking/ORD-20261129-01") }
             )
         }
     }
@@ -915,41 +962,128 @@ fun FigmaNotificationDrawer(
 
 @Composable
 fun DrawerNotifItem(
+    id: String,
     icon: ImageVector,
-    text: String,
-    onClick: () -> Unit
+    title: String,
+    tag: String,
+    subtitle: String,
+    description: String,
+    actionText: String,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    onNavigate: () -> Unit
 ) {
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        label = "drawer_notif_rotation"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isExpanded) Color.White.copy(alpha = 0.12f) else Color.Transparent)
+            .padding(6.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = GearaOrange, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = null, tint = GearaOrange, modifier = Modifier.size(22.dp))
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = text,
+                text = title,
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 lineHeight = 17.sp,
                 modifier = Modifier.weight(1f)
             )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .rotate(rotationAngle)
+            )
         }
-        Spacer(modifier = Modifier.height(14.dp))
-        Divider(color = Color.White.copy(alpha = 0.3f))
-        Spacer(modifier = Modifier.height(14.dp))
+
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = tag,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GearaOrange
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GearaDarkBrown
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = description,
+                        fontSize = 11.sp,
+                        color = Color(0xFF555555),
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onNavigate,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GearaOrange),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                    ) {
+                        Text(
+                            text = actionText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.25f), thickness = 0.8.dp)
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
