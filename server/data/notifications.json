@@ -1,0 +1,61 @@
+[
+  {
+    "id": "notif_1792554507774",
+    "title": "CRM Pengingat Servis Otomotif 🔧",
+    "message": "Hai Gibran Rakabuming! Sudah 2.000 KM sejak servis terakhir motor Honda Vario 160 Anda, waktunya ganti oli mesin dan periksa sistem transmisi (V-Belt & Roller) di bengkel rekanan GEARA!",
+    "time": "Baru saja",
+    "category": "Promo & Servis",
+    "is_read": false,
+    "created_at": "2026-10-21T03:48:27.774Z"
+  },
+  {
+    "id": "notif_1792554507771",
+    "title": "Kurir Mulai Mengantar Paket! 🛵",
+    "message": "Kurir ekspedisi JNE Express YES sedang meluncur membawa suku cadang pesanan #GR-7719203 menuju bengkel atau alamat Anda.",
+    "time": "Baru saja",
+    "category": "Pesanan",
+    "is_read": false,
+    "created_at": "2026-10-21T03:48:27.771Z"
+  },
+  {
+    "id": "notif_1792554507767",
+    "title": "Pembayaran Terverifikasi! ✅",
+    "message": "Pembayaran pesanan #GR-7719203 via Virtual Account / QRIS telah sukses diverifikasi. Paket sedang disiapkan oleh gudang pusat GEARA.",
+    "time": "Baru saja",
+    "category": "Pesanan",
+    "is_read": false,
+    "created_at": "2026-10-21T03:48:27.767Z"
+  },
+  {
+    "id": "notif_1",
+    "title": "Promo Spesial Servis & Suku Cadang!",
+    "message": "Dapatkan diskon potongan hingga 30% untuk pembelian kampas rem dan busi iridium hari ini.",
+    "time": "10 menit lalu",
+    "category": "Promo",
+    "is_read": false
+  },
+  {
+    "id": "notif_2",
+    "title": "Pesanan #GR-8842109 Sedang Dikirim",
+    "message": "Kurir JNE sedang menuju alamatmu. Klik untuk melihat Live Tracking kurir.",
+    "time": "1 jam lalu",
+    "category": "Pesanan",
+    "is_read": false
+  },
+  {
+    "id": "notif_3",
+    "title": "Pengingat Servis Rutin CRM",
+    "message": "Hai Gibran! Sudah 2.000 KM sejak penggantian oli terakhir motor Honda Vario kamu. Waktunya servis berkala!",
+    "time": "Kemarin",
+    "category": "Servis",
+    "is_read": true
+  },
+  {
+    "id": "notif_4",
+    "title": "Pesanan #GR-7731902 Berhasil Diterima",
+    "message": "Terima kasih telah berbelanja di Geara CRM Suku Cadang. Silakan beri ulasan bintang 5.",
+    "time": "7 hari lalu",
+    "category": "Pesanan",
+    "is_read": true
+  }
+]

@@ -1,0 +1,35 @@
+# Keamanan & Kunci Rilis (SANGAT PENTING - JANGAN DI-PUSH)
+keystore.properties
+*.jks
+*.keystore
+*.key
+*.p12
+
+# Android Studio & Build Artifacts
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+local.properties
+/.idea/
+.DS_Store
+Thumbs.db
+/build/
+*/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# File Sementara, Script Uji Coba & Screenshot
+scratch/
+rendered_screens/
+test.png
+*.log
+
+# Mentahan Desain Figma (Ukuran puluhan MB, tidak perlu di-push)
+UI-UX CRM SUKU CADANG/
+
+# Backend / Node.js (jika ada dependency / environment lokal)
+node_modules/
+server/node_modules/
+.env

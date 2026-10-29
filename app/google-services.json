@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "568473855928",
+    "project_id": "id-ac-stmi-aplikasiutsgi-37852",
+    "storage_bucket": "id-ac-stmi-aplikasiutsgi-37852.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:568473855928:android:76551f517e1e7ce318114d",
+        "android_client_info": {
+          "package_name": "id.ac.stmi.aplikasiutsgibran"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwpLZbqc-ARi5PlY5ynpyXBsittXrjFn4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

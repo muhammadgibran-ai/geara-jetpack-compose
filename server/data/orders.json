@@ -1,0 +1,112 @@
+[
+  {
+    "id": "GR-8842109",
+    "date": "19 Okt 2026, 14:15 WIB",
+    "status": "ACTIVE",
+    "items": [
+      {
+        "product_id": "prod_5",
+        "product_name": "Oli Mesin Sintetis Penuh 10W-40 (1L)",
+        "brand": "Motul 7100 Ester",
+        "price": 125000,
+        "quantity": 1,
+        "image_url": "https://geara-parts-storage.s3.ap-southeast-1.amazonaws.com/products/prod_5_oli.png"
+      },
+      {
+        "product_id": "prod_1",
+        "product_name": "Busi Iridium Racing Laser",
+        "brand": "NGK Japan",
+        "price": 95000,
+        "quantity": 2,
+        "image_url": "https://geara-parts-storage.s3.ap-southeast-1.amazonaws.com/products/prod_1_busi.png"
+      }
+    ],
+    "subtotal": 315000,
+    "delivery_fee": 15000,
+    "discount": 25000,
+    "total_amount": 305000,
+    "delivery_address": "Jl. Salemba Tengah No. 34, Senen, Jakarta Pusat (Bengkel Geara Motor)",
+    "courier_name": "JNE Express - YES (Kilat)",
+    "courier_phone": "0812-9988-7766",
+    "resi_number": "GR88421098X",
+    "estimated_arrival": "Hari ini, 17:00 WIB",
+    "tracking_steps": [
+      {
+        "title": "Pesanan Dibuat",
+        "time": "14:15",
+        "description": "Pesanan telah dikonfirmasi oleh sistem CRM Geara.",
+        "is_completed": true,
+        "is_current": false
+      },
+      {
+        "title": "Suku Cadang Disiapkan",
+        "time": "14:40",
+        "description": "Barang dicek QC dan dikemas dengan bubble wrap tebal.",
+        "is_completed": true,
+        "is_current": false
+      },
+      {
+        "title": "Diserahkan ke Kurir",
+        "time": "15:10",
+        "description": "Paket diserahkan ke kurir JNE Express.",
+        "is_completed": true,
+        "is_current": false
+      },
+      {
+        "title": "Kurir Menuju Lokasimu",
+        "time": "15:45",
+        "description": "Kurir sedang dalam perjalanan ke alamat penerima.",
+        "is_completed": true,
+        "is_current": true
+      },
+      {
+        "title": "Pesanan Tiba",
+        "time": "Estimasi 17:00",
+        "description": "Paket diterima di alamat tujuan.",
+        "is_completed": false,
+        "is_current": false
+      }
+    ]
+  },
+  {
+    "id": "GR-7731902",
+    "date": "12 Okt 2026, 10:20 WIB",
+    "status": "COMPLETED",
+    "items": [
+      {
+        "product_id": "prod_3",
+        "product_name": "Kampas Rem Depan Ceramic",
+        "brand": "Brembo Racing",
+        "price": 85000,
+        "quantity": 2,
+        "image_url": "https://geara-parts-storage.s3.ap-southeast-1.amazonaws.com/products/prod_3_kampas.png"
+      },
+      {
+        "product_id": "prod_7",
+        "product_name": "Filter Udara High-Flow Washable",
+        "brand": "Ferrox Stainless",
+        "price": 160000,
+        "quantity": 1,
+        "image_url": "https://geara-parts-storage.s3.ap-southeast-1.amazonaws.com/products/prod_7_filter.png"
+      }
+    ],
+    "subtotal": 330000,
+    "delivery_fee": 12000,
+    "discount": 20000,
+    "total_amount": 322000,
+    "delivery_address": "Jl. Salemba Tengah No. 34, Jakarta Pusat",
+    "courier_name": "SiCepat REG",
+    "courier_phone": "0813-1122-3344",
+    "resi_number": "SC99182341",
+    "estimated_arrival": "13 Okt 2026",
+    "tracking_steps": [
+      {
+        "title": "Pesanan Selesai",
+        "time": "13 Okt 2026, 11:15",
+        "description": "Pesanan telah diterima dan ulasan diberikan.",
+        "is_completed": true,
+        "is_current": false
+      }
+    ]
+  }
+]

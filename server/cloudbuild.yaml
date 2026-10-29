@@ -1,0 +1,29 @@
+# Google Cloud Build & Cloud Run Deployment Configuration (Region: Jakarta asia-southeast2)
+steps:
+  # 1. Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/geara-crm-api:$COMMIT_SHA', '.']
+
+  # 2. Push image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/geara-crm-api:$COMMIT_SHA']
+
+  # 3. Deploy container ke Google Cloud Run dengan SSL HTTPS otomatis
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'geara-crm-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/geara-crm-api:$COMMIT_SHA'
+      - '--region'
+      - 'asia-southeast2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/geara-crm-api:$COMMIT_SHA'

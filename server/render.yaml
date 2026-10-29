@@ -1,0 +1,15 @@
+# Render.com Blueprint untuk Deployment Otomatis Backend GEARA CRM Suku Cadang (HTTPS)
+services:
+  - type: web
+    name: geara-crm-api
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: ""
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/v1/health

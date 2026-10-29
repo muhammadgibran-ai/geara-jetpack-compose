@@ -1,0 +1,20 @@
+{
+  "name": "geara-crm-backend",
+  "version": "1.0.0",
+  "description": "Backend API Server Real-time untuk GEARA CRM Suku Cadang Android App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "geara",
+    "crm",
+    "suku-cadang",
+    "android",
+    "retrofit",
+    "inventory"
+  ],
+  "author": "GEARA CRM Team",
+  "license": "ISC"
+}
