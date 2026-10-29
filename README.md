@@ -86,3 +86,4 @@ npm start
 
 * **Muhammad Gibran Ramadhan** ([@muhammadgibran-ai](https://github.com/muhammadgibran-ai))
 * **Politeknik STMI Jakarta**
+
