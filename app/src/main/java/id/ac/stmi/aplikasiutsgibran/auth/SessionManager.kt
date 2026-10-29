@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -81,14 +82,25 @@ class SessionManager @Inject constructor(
         }
     }
 
+    suspend fun savePhoneEmailMapping(phone: String, email: String) {
+        val cleanPhone = phone.filter { it.isDigit() }
+        if (cleanPhone.isNotBlank()) {
+            context.dataStore.edit { preferences ->
+                preferences[stringPreferencesKey("phone_map_$cleanPhone")] = email
+            }
+        }
+    }
+
+    suspend fun getEmailByPhone(phone: String): String? {
+        val cleanPhone = phone.filter { it.isDigit() }
+        val preferences = context.dataStore.data.first()
+        return preferences[stringPreferencesKey("phone_map_$cleanPhone")]
+    }
+
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
-            val savedFcm = preferences[KEY_FCM_TOKEN]
-            preferences.clear()
             preferences[KEY_IS_LOGGED_IN] = false
-            if (savedFcm != null) {
-                preferences[KEY_FCM_TOKEN] = savedFcm
-            }
+            preferences.remove(KEY_AUTH_TOKEN)
         }
     }
 }

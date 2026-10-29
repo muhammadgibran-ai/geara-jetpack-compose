@@ -63,7 +63,7 @@ fun LoginScreen(
         when (authState) {
             is AuthState.Success -> {
                 navController.navigate("home") {
-                    popUpTo("login") { inclusive = true }
+                    popUpTo(0) { inclusive = true }
                 }
                 authViewModel.resetState()
             }
