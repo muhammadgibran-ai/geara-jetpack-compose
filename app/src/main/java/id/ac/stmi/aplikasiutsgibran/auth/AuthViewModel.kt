@@ -131,6 +131,8 @@ class AuthViewModel @Inject constructor(
                 } else {
                     val ex = task.exception
                     val errorMsg = when {
+                        ex?.message?.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) == true ->
+                            "Layanan Email/Password belum diaktifkan di Firebase Console. Silakan buka Firebase Console -> Authentication -> Sign-in method -> aktifkan Email/Password."
                         ex?.message?.contains("no user record", ignoreCase = true) == true ||
                         ex?.message?.contains("user-not-found", ignoreCase = true) == true ->
                             "Akun tidak valid. Akun dengan email '$email' belum terdaftar di Firebase."
@@ -216,6 +218,8 @@ class AuthViewModel @Inject constructor(
                 } else {
                     val ex = task.exception
                     val errorMsg = when {
+                        ex?.message?.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) == true ->
+                            "Layanan Email/Password belum diaktifkan di Firebase Console. Silakan buka Firebase Console -> Authentication -> Sign-in method -> aktifkan Email/Password."
                         ex?.message?.contains("email-already-in-use", ignoreCase = true) == true ||
                         ex?.message?.contains("already in use", ignoreCase = true) == true ->
                             "Email '$cleanEmail' sudah terdaftar di Firebase. Silakan langsung masuk di menu Login."
