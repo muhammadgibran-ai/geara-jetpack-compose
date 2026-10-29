@@ -60,20 +60,20 @@ fun NotificationScreen(
                 id = "catalog",
                 icon = Icons.Default.GridView,
                 title = "Suku cadang baru untuk kendaraan Anda.",
-                tag = "Produk Baru • 10 mnt lalu",
-                subtitle = "Katalog Geara Original 2026",
-                description = "Suku cadang resmi untuk tipe mobil Geara Anda (Terra SUV, Prime EV, City, Apex) kini tersedia lengkap dengan jaminan kualitas pabrikan dan garansi 12 bulan.",
-                actionText = "Lihat Katalog Suku Cadang",
+                tag = "Katalog Baru • 10 mnt lalu",
+                subtitle = "Koleksi Suku Cadang Resmi 2026",
+                description = "Suku cadang resmi tipe Terra SUV, Prime EV, City, dan Apex tersedia dengan garansi pabrikan 12 bulan.",
+                actionText = "Buka Katalog",
                 destinationRoute = "catalog"
             ),
             NotificationItemData(
                 id = "promo",
                 icon = Icons.Default.FavoriteBorder,
                 title = "Suku cadang favorit Anda sedang promo.",
-                tag = "Promo Kilat • 1 jam lalu",
-                subtitle = "Diskon Spesial Hingga 30%",
-                description = "Busi Iridium, Filter Udara High-Flow, dan Oli Mesin di daftar favorit Anda sedang diskon terbatas. Klaim promonya sebelum masa berlaku habis!",
-                actionText = "Buka Menu Favorit",
+                tag = "Promo • 1 jam lalu",
+                subtitle = "Diskon Suku Cadang Pilihan",
+                description = "Busi Iridium, filter udara, dan oli mesin di daftar favorit Anda sedang diskon hingga 30%.",
+                actionText = "Buka Favorit",
                 destinationRoute = "favorites"
             ),
             NotificationItemData(
@@ -81,8 +81,8 @@ fun NotificationScreen(
                 icon = Icons.Default.ShoppingBag,
                 title = "Pesanan Anda telah sampai",
                 tag = "Pengiriman Selesai • 3 jam lalu",
-                subtitle = "Pesanan #ORD-20261129-01 Selesai",
-                description = "Paket suku cadang Geara Anda telah sampai di alamat tujuan dan diterima dengan aman. Silakan konfirmasi penerimaan barang dan berikan ulasan Anda.",
+                subtitle = "Pesanan #ORD-20261129-01",
+                description = "Paket telah sampai di alamat tujuan. Periksa kelengkapan barang dan konfirmasi penerimaan pesanan.",
                 actionText = "Lihat Rincian Pesanan",
                 destinationRoute = "orders"
             ),
@@ -90,10 +90,10 @@ fun NotificationScreen(
                 id = "tracking",
                 icon = Icons.Default.TwoWheeler,
                 title = "Kurir sedang dalam perjalanan",
-                tag = "Live Tracking • Baru saja",
-                subtitle = "Driver: Budi Santoso (Honda Vario)",
-                description = "Kurir Geara Express sedang menuju ke lokasi pengiriman Anda dengan nomor resi GR-8842109. Estimasi waktu kedatangan kurir sekitar 12 menit.",
-                actionText = "Lacak Posisi Kurir Sekarang",
+                tag = "Pengantaran • Baru saja",
+                subtitle = "Kurir: Budi Santoso",
+                description = "Kurir sedang mengantar pesanan dengan nomor resi GR-8842109. Estimasi tiba sekitar 12 menit.",
+                actionText = "Lacak Pengiriman",
                 destinationRoute = "live_tracking/ORD-20261129-01"
             )
         )

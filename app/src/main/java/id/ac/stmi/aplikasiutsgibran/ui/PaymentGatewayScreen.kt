@@ -28,10 +28,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.foundation.text.KeyboardOptions
+import id.ac.stmi.aplikasiutsgibran.auth.SessionManager
 import id.ac.stmi.aplikasiutsgibran.data.GearaViewModel
 import id.ac.stmi.aplikasiutsgibran.data.OrderStatus
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaDarkBrown
@@ -50,11 +53,50 @@ fun PaymentGatewayScreen(
     val scope = rememberCoroutineScope()
     val order = viewModel.getOrderById(orderId)
 
+    val sessionManager = remember { SessionManager(context.applicationContext) }
+    val savedPrimaryMethod by sessionManager.primaryPaymentMethod.collectAsState(initial = "gopay")
+    val savedIsDanaConnected by sessionManager.isDanaConnected.collectAsState(initial = false)
+    val savedDanaPhone by sessionManager.danaPhone.collectAsState(initial = "081234567806")
+
     // State metode pembayaran aktif: "QRIS", "VA", "EWALLET", "CC"
-    var selectedChannel by remember { mutableStateOf("QRIS") }
+    var selectedChannel by remember { mutableStateOf("EWALLET") }
+    var selectedWallet by remember { mutableStateOf("GoPay") }
     var selectedBank by remember { mutableStateOf("BCA") }
     var isSimulating by remember { mutableStateOf(false) }
     var isCheckingStatus by remember { mutableStateOf(false) }
+
+    var showDanaDialog by remember { mutableStateOf(false) }
+    var danaPhoneNumber by remember { mutableStateOf("081234567806") }
+
+    // Sinkronisasi otomatis dari Metode Pembayaran Utama yang dipilih pengguna
+    LaunchedEffect(savedPrimaryMethod) {
+        when (savedPrimaryMethod) {
+            "gopay" -> {
+                selectedChannel = "EWALLET"
+                selectedWallet = "GoPay"
+            }
+            "ovo" -> {
+                selectedChannel = "EWALLET"
+                selectedWallet = "OVO"
+            }
+            "dana" -> {
+                selectedChannel = "EWALLET"
+                selectedWallet = "DANA"
+            }
+            "va_bca" -> {
+                selectedChannel = "VA"
+                selectedBank = "BCA"
+            }
+            "va_mandiri" -> {
+                selectedChannel = "VA"
+                selectedBank = "Mandiri"
+            }
+        }
+    }
+
+    LaunchedEffect(savedDanaPhone) {
+        danaPhoneNumber = savedDanaPhone
+    }
 
     // Hitung mundur waktu pembayaran (24 Jam)
     var remainingSeconds by remember { mutableLongStateOf(86395L) }
@@ -161,7 +203,7 @@ fun PaymentGatewayScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Total Tagihan Pembayaran",
+                                text = "Total Pembayaran",
                                 fontSize = 12.sp,
                                 color = Color.Gray,
                                 fontWeight = FontWeight.Medium
@@ -196,7 +238,7 @@ fun PaymentGatewayScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Selesaikan dalam: ",
+                                    text = "Batas waktu pembayaran: ",
                                     fontSize = 12.sp,
                                     color = Color.DarkGray
                                 )
@@ -257,15 +299,22 @@ fun PaymentGatewayScreen(
                                 onCopy = {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     clipboard.setPrimaryClip(ClipData.newPlainText("QRIS Data", "ID.CO.GEARA.PAY.$orderId"))
-                                    Toast.makeText(context, "Data QRIS disalin ke clipboard!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Kode QRIS disalin.", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
                         "VA" -> {
                             VirtualAccountView(
                                 selectedBank = selectedBank,
+                                primaryMethod = savedPrimaryMethod,
                                 vaNumber = vaNumber,
-                                onBankSelected = { selectedBank = it },
+                                onBankSelected = { bank ->
+                                    selectedBank = bank
+                                    val methodKey = if (bank == "Mandiri") "va_mandiri" else "va_bca"
+                                    scope.launch {
+                                        sessionManager.savePrimaryPaymentMethod(methodKey)
+                                    }
+                                },
                                 onCopy = {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     clipboard.setPrimaryClip(ClipData.newPlainText("VA Number", vaNumber))
@@ -275,8 +324,24 @@ fun PaymentGatewayScreen(
                         }
                         "EWALLET" -> {
                             EWalletPaymentView(
+                                selectedWallet = selectedWallet,
+                                primaryMethod = savedPrimaryMethod,
+                                isDanaConnected = savedIsDanaConnected,
                                 onSelect = { walletName ->
-                                    Toast.makeText(context, "Menghubungkan ke aplikasi $walletName...", Toast.LENGTH_SHORT).show()
+                                    selectedWallet = walletName
+                                    val methodKey = when (walletName) {
+                                        "GoPay" -> "gopay"
+                                        "OVO" -> "ovo"
+                                        "DANA" -> "dana"
+                                        else -> "gopay"
+                                    }
+                                    scope.launch {
+                                        sessionManager.savePrimaryPaymentMethod(methodKey)
+                                    }
+                                    Toast.makeText(context, "$walletName dipilih sebagai metode utama.", Toast.LENGTH_SHORT).show()
+                                },
+                                onConnectDana = {
+                                    showDanaDialog = true
                                 }
                             )
                         }
@@ -301,7 +366,7 @@ fun PaymentGatewayScreen(
                                 Icon(Icons.Default.Bolt, contentDescription = null, tint = GearaOrange, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Simulasi Webhook Sandbox",
+                                    text = "Simulasi Pembayaran (Sandbox)",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = GearaDarkBrown
@@ -309,7 +374,7 @@ fun PaymentGatewayScreen(
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Menembak Webhook konfirmasi pembayaran ke server untuk mengubah status pesanan dari PENDING ke ACTIVE secara instan.",
+                                text = "Simulasi alur transaksi tanpa potongan dana nyata untuk pengujian status pesanan.",
                                 fontSize = 11.sp,
                                 color = Color.DarkGray,
                                 textAlign = TextAlign.Center,
@@ -322,7 +387,7 @@ fun PaymentGatewayScreen(
                                     isSimulating = true
                                     viewModel.simulatePaymentSuccess(orderId) {
                                         isSimulating = false
-                                        Toast.makeText(context, "🎉 Webhook Berhasil: Pembayaran Lunas!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Pembayaran berhasil diverifikasi.", Toast.LENGTH_LONG).show()
                                         navController.navigate("order_confirmed/$orderId") {
                                             popUpTo("payment_gateway/$orderId") { inclusive = true }
                                         }
@@ -338,11 +403,11 @@ fun PaymentGatewayScreen(
                                 if (isSimulating) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Memproses Webhook...", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text("Memproses verifikasi...", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 } else {
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Simulasikan Pembayaran Sukses", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text("Simulasikan Pembayaran Berhasil", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -356,7 +421,7 @@ fun PaymentGatewayScreen(
                             isCheckingStatus = true
                             viewModel.checkPaymentStatus(orderId) {
                                 isCheckingStatus = false
-                                Toast.makeText(context, "Pembayaran terkonfirmasi!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Pembayaran telah terkonfirmasi.", Toast.LENGTH_SHORT).show()
                                 navController.navigate("order_confirmed/$orderId") {
                                     popUpTo("payment_gateway/$orderId") { inclusive = true }
                                 }
@@ -375,7 +440,7 @@ fun PaymentGatewayScreen(
                         if (isCheckingStatus) {
                             CircularProgressIndicator(color = GearaOrange, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Mengecek Server...", fontSize = 13.sp)
+                            Text("Memeriksa status...", fontSize = 13.sp)
                         } else {
                             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -395,7 +460,7 @@ fun PaymentGatewayScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Bayar Nanti (Lihat di Pesanan Saya)",
+                            text = "Bayar nanti (simpan ke Pesanan Saya)",
                             fontSize = 13.sp,
                             color = Color.Gray,
                             fontWeight = FontWeight.Medium
@@ -405,6 +470,90 @@ fun PaymentGatewayScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
             }
+        }
+
+        // Pop-up Hubungkan Akun DANA
+        if (showDanaDialog) {
+            AlertDialog(
+                onDismissRequest = { showDanaDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF118EEA).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = Color(0xFF118EEA),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Hubungkan Akun DANA",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = GearaDarkBrown
+                        )
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Masukkan nomor ponsel yang terdaftar di akun DANA untuk menghubungkan pembayaran.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF555555),
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        OutlinedTextField(
+                            value = danaPhoneNumber,
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() || it == '+' }
+                                if (filtered.length <= 15) {
+                                    danaPhoneNumber = filtered
+                                }
+                            },
+                            label = { Text("Nomor Ponsel DANA") },
+                            placeholder = { Text("081234567890") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (danaPhoneNumber.length >= 10) {
+                                selectedWallet = "DANA"
+                                showDanaDialog = false
+                                scope.launch {
+                                    sessionManager.setDanaConnected(true, danaPhoneNumber)
+                                    sessionManager.savePrimaryPaymentMethod("dana")
+                                }
+                                Toast.makeText(context, "Akun DANA ($danaPhoneNumber) terhubung sebagai metode utama.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Nomor ponsel DANA minimal 10 digit.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = GearaOrange),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Hubungkan Akun", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDanaDialog = false }) {
+                        Text("Batal", color = Color.Gray)
+                    }
+                }
+            )
         }
     }
 }
@@ -527,6 +676,7 @@ fun QrisPaymentView(
 @Composable
 fun VirtualAccountView(
     selectedBank: String,
+    primaryMethod: String,
     vaNumber: String,
     onBankSelected: (String) -> Unit,
     onCopy: () -> Unit
@@ -541,22 +691,38 @@ fun VirtualAccountView(
         ) {
             banks.forEach { bank ->
                 val isSelected = selectedBank == bank
+                val isPrimary = (bank == "BCA" && primaryMethod == "va_bca") || (bank == "Mandiri" && primaryMethod == "va_mandiri")
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
                         .background(if (isSelected) Color(0xFFFFE0D3) else Color.White)
-                        .border(1.dp, if (isSelected) GearaOrange else Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+                        .border(
+                            1.dp,
+                            if (isSelected) GearaOrange else Color(0xFFE0E0E0),
+                            RoundedCornerShape(10.dp)
+                        )
                         .clickable { onBankSelected(bank) }
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = bank,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) GearaOrange else GearaDarkBrown
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = bank,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) GearaOrange else GearaDarkBrown
+                        )
+                        if (isPrimary) {
+                            Text(
+                                text = "Utama",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GearaOrange
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -635,13 +801,16 @@ fun VirtualAccountView(
 
 @Composable
 fun EWalletPaymentView(
-    onSelect: (String) -> Unit
+    selectedWallet: String,
+    primaryMethod: String,
+    isDanaConnected: Boolean,
+    onSelect: (String) -> Unit,
+    onConnectDana: () -> Unit
 ) {
     val wallets = listOf(
-        Pair("GoPay", Color(0xFF00AED6)),
-        Pair("ShopeePay", Color(0xFFEE4D2D)),
-        Pair("DANA", Color(0xFF118EEA)),
-        Pair("OVO", Color(0xFF4C2A86))
+        Triple("GoPay", "Terhubung • Saldo: Rp 850.000", Color(0xFF00AED6)),
+        Triple("OVO", "Terhubung • 0812-3456-7890", Color(0xFF4C2A86)),
+        Triple("DANA", if (isDanaConnected) "Terhubung • Saldo: Rp 450.000" else "Klik untuk menghubungkan akun", Color(0xFF118EEA))
     )
 
     Card(
@@ -663,21 +832,44 @@ fun EWalletPaymentView(
                 color = GearaDarkBrown
             )
 
-            wallets.forEach { (name, color) ->
+            wallets.forEach { (name, subtitle, color) ->
+                val isSelected = selectedWallet == name
+                val methodKey = when (name) {
+                    "GoPay" -> "gopay"
+                    "OVO" -> "ovo"
+                    "DANA" -> "dana"
+                    else -> "gopay"
+                }
+                val isPrimary = primaryMethod == methodKey
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF9F9F9))
-                        .clickable { onSelect(name) }
+                        .background(if (isSelected) Color(0xFFFFF7ED) else Color(0xFFF9F9F9))
+                        .border(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) GearaOrange else Color(0xFFEEEEEE),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable {
+                            if (name == "DANA" && !isDanaConnected) {
+                                onConnectDana()
+                            } else {
+                                onSelect(name)
+                            }
+                        }
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(36.dp)
                                 .background(color.copy(alpha = 0.15f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
@@ -689,19 +881,56 @@ fun EWalletPaymentView(
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = name,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = GearaDarkBrown
-                        )
+                        Column {
+                            Text(
+                                text = name,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GearaDarkBrown
+                            )
+                            Text(
+                                text = subtitle,
+                                fontSize = 11.sp,
+                                color = if (subtitle.contains("Klik untuk", ignoreCase = true)) GearaOrange else Color.Gray,
+                                fontWeight = if (subtitle.contains("Klik untuk", ignoreCase = true)) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                        }
                     }
 
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = Color.Gray
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isPrimary) {
+                            Surface(
+                                color = Color(0xFFFFECE5),
+                                shape = RoundedCornerShape(6.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GearaOrange.copy(alpha = 0.5f))
+                            ) {
+                                Text(
+                                    text = "Utama",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GearaOrange,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Terpilih",
+                                tint = GearaOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

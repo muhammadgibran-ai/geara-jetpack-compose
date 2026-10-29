@@ -28,6 +28,36 @@ class SessionManager @Inject constructor(
         val KEY_USER_PHONE = stringPreferencesKey("user_phone")
         val KEY_AUTH_TOKEN = stringPreferencesKey("auth_token")
         val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
+        val KEY_PRIMARY_PAYMENT_METHOD = stringPreferencesKey("primary_payment_method")
+        val KEY_IS_DANA_CONNECTED = booleanPreferencesKey("is_dana_connected")
+        val KEY_DANA_PHONE = stringPreferencesKey("dana_phone")
+    }
+
+    val primaryPaymentMethod: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_PRIMARY_PAYMENT_METHOD] ?: "gopay"
+    }
+
+    val isDanaConnected: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_IS_DANA_CONNECTED] ?: false
+    }
+
+    val danaPhone: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_DANA_PHONE] ?: "081234567806"
+    }
+
+    suspend fun savePrimaryPaymentMethod(method: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_PRIMARY_PAYMENT_METHOD] = method
+        }
+    }
+
+    suspend fun setDanaConnected(connected: Boolean, phone: String = "") {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_IS_DANA_CONNECTED] = connected
+            if (phone.isNotBlank()) {
+                preferences[KEY_DANA_PHONE] = phone
+            }
+        }
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { preferences ->

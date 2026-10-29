@@ -163,6 +163,23 @@ class MainActivity : FragmentActivity() {
                         composable("search") {
                             SearchScreen(navController, gearaViewModel)
                         }
+
+                        // 9. Profile Drawer Pages
+                        composable("addresses") {
+                            AddressScreen(navController)
+                        }
+                        composable("payment_methods") {
+                            PaymentMethodsScreen(navController)
+                        }
+                        composable("contact_us") {
+                            ContactUsScreen(navController)
+                        }
+                        composable("faq") {
+                            FaqScreen(navController)
+                        }
+                        composable("settings") {
+                            SettingsScreen(navController)
+                        }
                     }
                 }
             }

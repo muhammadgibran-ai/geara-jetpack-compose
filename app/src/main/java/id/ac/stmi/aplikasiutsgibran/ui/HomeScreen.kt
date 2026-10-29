@@ -893,7 +893,7 @@ fun FigmaNotificationDrawer(
                         color = Color.White
                     )
                     Text(
-                        text = "Ketuk untuk melihat informasi",
+                        text = "Pembaruan pesanan & promo",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -909,9 +909,9 @@ fun FigmaNotificationDrawer(
                 id = "catalog",
                 icon = Icons.Default.GridView,
                 title = "Suku cadang baru untuk kendaraan Anda.",
-                tag = "Produk Baru • 10 mnt lalu",
+                tag = "Katalog Baru • 10 mnt lalu",
                 subtitle = "Koleksi Suku Cadang Resmi 2026",
-                description = "Suku cadang resmi untuk kendaraan Geara Anda kini tersedia dengan garansi pabrikan 12 bulan.",
+                description = "Suku cadang resmi tipe Terra SUV, Prime EV, City, dan Apex tersedia dengan garansi 12 bulan.",
                 actionText = "Buka Katalog",
                 isExpanded = expandedNotifId == "catalog",
                 onToggle = { expandedNotifId = if (expandedNotifId == "catalog") null else "catalog" },
@@ -922,9 +922,9 @@ fun FigmaNotificationDrawer(
                 id = "promo",
                 icon = Icons.Default.FavoriteBorder,
                 title = "Suku cadang favorit Anda sedang promo.",
-                tag = "Promo Kilat • 1 jam lalu",
-                subtitle = "Diskon Spesial Hingga 30%",
-                description = "Barang di daftar favorit Anda mendapatkan potongan harga spesial minggu ini.",
+                tag = "Promo • 1 jam lalu",
+                subtitle = "Diskon Suku Cadang Pilihan",
+                description = "Busi Iridium, filter udara, dan oli mesin di daftar favorit Anda sedang diskon hingga 30%.",
                 actionText = "Buka Favorit",
                 isExpanded = expandedNotifId == "promo",
                 onToggle = { expandedNotifId = if (expandedNotifId == "promo") null else "promo" },
@@ -937,8 +937,8 @@ fun FigmaNotificationDrawer(
                 title = "Pesanan Anda telah sampai",
                 tag = "Pengiriman Selesai • 3 jam lalu",
                 subtitle = "Pesanan #ORD-20261129-01",
-                description = "Paket suku cadang Anda telah sampai di alamat tujuan dan diterima dengan aman.",
-                actionText = "Cek Pesanan",
+                description = "Paket telah sampai di alamat tujuan. Periksa kelengkapan barang dan konfirmasi penerimaan pesanan.",
+                actionText = "Lihat Pesanan",
                 isExpanded = expandedNotifId == "orders",
                 onToggle = { expandedNotifId = if (expandedNotifId == "orders") null else "orders" },
                 onNavigate = { onNavigate("orders") }
@@ -948,10 +948,10 @@ fun FigmaNotificationDrawer(
                 id = "tracking",
                 icon = Icons.Default.TwoWheeler,
                 title = "Kurir sedang dalam perjalanan",
-                tag = "Live Tracking • Baru saja",
-                subtitle = "Driver: Budi Santoso (Honda Vario)",
-                description = "Kurir sedang menuju lokasi Anda (Resi: GR-8842109). Estimasi tiba: 12 menit.",
-                actionText = "Lacak Posisi Kurir",
+                tag = "Pengantaran • Baru saja",
+                subtitle = "Kurir: Budi Santoso",
+                description = "Kurir sedang mengantar pesanan dengan resi GR-8842109. Estimasi tiba sekitar 12 menit.",
+                actionText = "Lacak Pengiriman",
                 isExpanded = expandedNotifId == "tracking",
                 onToggle = { expandedNotifId = if (expandedNotifId == "tracking") null else "tracking" },
                 onNavigate = { onNavigate("live_tracking/ORD-20261129-01") }
@@ -1141,11 +1141,11 @@ fun FigmaProfileDrawer(
             // 8 Menu Items exactly from Figma 4.1 - A
             DrawerProfileMenuItem(icon = Icons.Default.ShoppingBag, title = "Pesanan Saya") { onNavigate("orders") }
             DrawerProfileMenuItem(icon = Icons.Default.Person, title = "Profil Saya") { onNavigate("profile") }
-            DrawerProfileMenuItem(icon = Icons.Default.LocationOn, title = "Alamat Pengiriman") { onNavigate("checkout") }
-            DrawerProfileMenuItem(icon = Icons.Default.CreditCard, title = "Metode Pembayaran") { onNavigate("checkout") }
-            DrawerProfileMenuItem(icon = Icons.Default.Phone, title = "Hubungi Kami") { onNavigate("support") }
-            DrawerProfileMenuItem(icon = Icons.Default.ChatBubbleOutline, title = "Bantuan & FAQ") { onNavigate("support") }
-            DrawerProfileMenuItem(icon = Icons.Default.Settings, title = "Pengaturan") { onNavigate("profile") }
+            DrawerProfileMenuItem(icon = Icons.Default.LocationOn, title = "Alamat Pengiriman") { onNavigate("addresses") }
+            DrawerProfileMenuItem(icon = Icons.Default.CreditCard, title = "Metode Pembayaran") { onNavigate("payment_methods") }
+            DrawerProfileMenuItem(icon = Icons.Default.Phone, title = "Hubungi Kami") { onNavigate("contact_us") }
+            DrawerProfileMenuItem(icon = Icons.Default.ChatBubbleOutline, title = "Bantuan & FAQ") { onNavigate("faq") }
+            DrawerProfileMenuItem(icon = Icons.Default.Settings, title = "Pengaturan") { onNavigate("settings") }
             DrawerProfileMenuItem(icon = Icons.Default.Logout, title = "Keluar") {
                 onLogout()
             }
