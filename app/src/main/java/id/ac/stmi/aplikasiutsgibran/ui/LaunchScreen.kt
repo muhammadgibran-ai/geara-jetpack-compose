@@ -48,7 +48,9 @@ fun LaunchScreen(
                 popUpTo("launch") { inclusive = true }
             }
         } else {
-            showWelcomeScreen = true
+            navController.navigate("onboarding") {
+                popUpTo("launch") { inclusive = true }
+            }
         }
     }
 
