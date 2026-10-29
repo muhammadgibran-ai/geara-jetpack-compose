@@ -12,7 +12,20 @@
           "package_name": "id.ac.stmi.aplikasiutsgibran"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "568473855928-2qt3q1vqc545db33t06rg1jsbjeqi00k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "id.ac.stmi.aplikasiutsgibran",
+            "certificate_hash": "ea65628d70e16dd0b2dd11db8683152a6090dcd0"
+          }
+        },
+        {
+          "client_id": "568473855928-t5rreo44gq099ttb4a9jq0e195c3p5dt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBwpLZbqc-ARi5PlY5ynpyXBsittXrjFn4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "568473855928-t5rreo44gq099ttb4a9jq0e195c3p5dt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
