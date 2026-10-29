@@ -1,5 +1,7 @@
 package id.ac.stmi.aplikasiutsgibran.ui
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,6 +47,17 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val authState by authViewModel.authState.collectAsState()
+    val context = LocalContext.current
+
+    // Cegah tombol back hardware/gesture kembali ke akun setelah logout
+    BackHandler {
+        val prevRoute = navController.previousBackStackEntry?.destination?.route
+        if (prevRoute != null && prevRoute != "home" && prevRoute != "profile" && prevRoute != "launch") {
+            navController.popBackStack()
+        } else {
+            (context as? Activity)?.finish()
+        }
+    }
 
     LaunchedEffect(authState) {
         when (authState) {
@@ -78,7 +92,16 @@ fun LoginScreen(
                     .padding(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = {
+                val prevRoute = navController.previousBackStackEntry?.destination?.route
+                if (prevRoute != null && prevRoute != "home" && prevRoute != "profile" && prevRoute != "launch") {
+                    navController.popBackStack()
+                } else {
+                    navController.navigate("onboarding") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Kembali",

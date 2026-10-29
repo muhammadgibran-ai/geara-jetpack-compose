@@ -41,8 +41,18 @@ import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaYellow
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: GearaViewModel
+    viewModel: GearaViewModel,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    val isLoggedIn by authViewModel.sessionManager.isLoggedIn.collectAsState(initial = true)
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn) {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     var activeDrawer by remember { mutableStateOf<String?>(null) } // "cart", "notif", "profile", null
     val cartItems by viewModel.cartItems.collectAsState()
 
@@ -429,7 +439,16 @@ fun HomeScreen(
                 onNavigate = { route ->
                     activeDrawer = null
                     navController.navigate(route)
-                }
+                },
+                onLogout = {
+                    activeDrawer = null
+                    authViewModel.logout {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+                authViewModel = authViewModel
             )
         }
     }
@@ -938,6 +957,7 @@ fun DrawerNotifItem(
 fun FigmaProfileDrawer(
     onClose: () -> Unit,
     onNavigate: (String) -> Unit,
+    onLogout: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userName by authViewModel.sessionManager.userName.collectAsState(initial = "Gibran Rakabuming")
@@ -993,9 +1013,7 @@ fun FigmaProfileDrawer(
             DrawerProfileMenuItem(icon = Icons.Default.ChatBubbleOutline, title = "Bantuan & FAQ") { onNavigate("support") }
             DrawerProfileMenuItem(icon = Icons.Default.Settings, title = "Pengaturan") { onNavigate("profile") }
             DrawerProfileMenuItem(icon = Icons.Default.Logout, title = "Keluar") {
-                authViewModel.logout {
-                    onNavigate("login")
-                }
+                onLogout()
             }
         }
     }

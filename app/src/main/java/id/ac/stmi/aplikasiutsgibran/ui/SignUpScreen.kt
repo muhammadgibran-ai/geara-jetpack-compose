@@ -77,7 +77,16 @@ fun SignUpScreen(
                     .padding(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = {
+                    val prevRoute = navController.previousBackStackEntry?.destination?.route
+                    if (prevRoute != null && prevRoute != "home" && prevRoute != "profile" && prevRoute != "launch") {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate("login") {
+                            popUpTo("signup") { inclusive = true }
+                        }
+                    }
+                }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Kembali",
