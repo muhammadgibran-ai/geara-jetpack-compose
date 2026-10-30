@@ -269,18 +269,62 @@ class AuthViewModel @Inject constructor(
         idToken: String? = null
     ) {
         _authState.value = AuthState.Loading
-        val uid = "google_${System.currentTimeMillis()}"
-        viewModelScope.launch {
-            sessionManager.saveSession(
-                isLoggedIn = true,
-                userId = uid,
-                name = name,
-                email = email,
-                phone = "0812-3456-7890",
-                token = idToken ?: "JWT-GOOGLE-${System.currentTimeMillis()}"
-            )
-            syncFcmToken(uid, email)
-            _authState.value = AuthState.Success("Berhasil masuk melalui Google OAuth ($email)!")
+        if (!idToken.isNullOrBlank()) {
+            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credential).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val firebaseUser = task.result?.user
+                    val finalUid = firebaseUser?.uid ?: "google_${System.currentTimeMillis()}"
+                    val finalEmail = firebaseUser?.email ?: email
+                    val finalName = firebaseUser?.displayName ?: name
+
+                    firebaseUser?.getIdToken(false)?.addOnCompleteListener { tokenTask ->
+                        val jwtToken = tokenTask.result?.token ?: idToken
+                        viewModelScope.launch {
+                            sessionManager.saveSession(
+                                isLoggedIn = true,
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890",
+                                token = jwtToken
+                            )
+                            syncFcmToken(finalUid, finalEmail)
+                            _authState.value = AuthState.Success("Berhasil masuk melalui Google ($finalEmail).")
+                        }
+                    } ?: run {
+                        viewModelScope.launch {
+                            sessionManager.saveSession(
+                                isLoggedIn = true,
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890",
+                                token = idToken
+                            )
+                            syncFcmToken(finalUid, finalEmail)
+                            _authState.value = AuthState.Success("Berhasil masuk melalui Google ($finalEmail).")
+                        }
+                    }
+                } else {
+                    val errorMsg = task.exception?.localizedMessage ?: "Autentikasi Firebase dengan Google gagal."
+                    _authState.value = AuthState.Error(errorMsg)
+                }
+            }
+        } else {
+            val uid = "google_${System.currentTimeMillis()}"
+            viewModelScope.launch {
+                sessionManager.saveSession(
+                    isLoggedIn = true,
+                    userId = uid,
+                    name = name,
+                    email = email,
+                    phone = "0812-3456-7890",
+                    token = "JWT-GOOGLE-${System.currentTimeMillis()}"
+                )
+                syncFcmToken(uid, email)
+                _authState.value = AuthState.Success("Berhasil masuk melalui Google ($email).")
+            }
         }
     }
 

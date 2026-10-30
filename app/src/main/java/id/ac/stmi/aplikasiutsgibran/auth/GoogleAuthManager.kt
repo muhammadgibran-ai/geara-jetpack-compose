@@ -15,7 +15,16 @@ import com.google.android.gms.common.api.ApiException
 object GoogleAuthManager {
 
     fun getGoogleSignInClient(context: Context): GoogleSignInClient {
+        val webClientId = try {
+            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+            if (resId != 0) context.getString(resId)
+            else "568473855928-t5rreo44gq099ttb4a9jq0e195c3p5dt.apps.googleusercontent.com"
+        } catch (_: Exception) {
+            "568473855928-t5rreo44gq099ttb4a9jq0e195c3p5dt.apps.googleusercontent.com"
+        }
+
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
             .requestEmail()
             .requestProfile()
             .build()
@@ -38,10 +47,11 @@ object GoogleAuthManager {
             }
         } catch (e: ApiException) {
             val statusMessage = when (e.statusCode) {
-                12501 -> "Pemilihan akun Google dibatalkan pengguna."
-                12500 -> "Terjadi kesalahan internal saat menghubungkan ke akun Google."
-                7 -> "Koneksi jaringan terputus saat login Google."
-                else -> "Gagal otentikasi Google (Kode: ${e.statusCode})"
+                12501 -> "Pemilihan akun Google dibatalkan."
+                12500 -> "Terjadi kesalahan internal saat menghubungkan akun Google."
+                10 -> "Konfigurasi OAuth Google tidak sesuai. Pastikan SHA-1 terdaftar di Firebase."
+                7 -> "Koneksi internet bermasalah saat login Google."
+                else -> "Gagal autentikasi Google (Kode: ${e.statusCode})"
             }
             Result.failure(Exception(statusMessage))
         } catch (e: Exception) {

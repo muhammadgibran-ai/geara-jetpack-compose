@@ -2,10 +2,16 @@ package id.ac.stmi.aplikasiutsgibran.ui
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -16,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -23,11 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
+import id.ac.stmi.aplikasiutsgibran.R
 import id.ac.stmi.aplikasiutsgibran.auth.AuthState
 import id.ac.stmi.aplikasiutsgibran.auth.AuthViewModel
+import id.ac.stmi.aplikasiutsgibran.auth.GoogleAuthManager
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaDarkBrown
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaOrange
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaYellow
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -48,6 +58,31 @@ fun LoginScreen(
 
     val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val parseResult = GoogleAuthManager.parseSignInResult(result.data)
+            parseResult.onSuccess { account ->
+                val email = account.email ?: ""
+                val name = account.displayName ?: "Pengguna Google"
+                val idToken = account.idToken
+                authViewModel.loginWithGoogle(email, name, idToken)
+            }.onFailure { ex ->
+                val msg = ex.message ?: "Gagal masuk dengan Google."
+                authViewModel.resetState()
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(msg)
+                }
+            }
+        } else if (result.resultCode != Activity.RESULT_CANCELED) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Login Google dibatalkan.")
+            }
+        }
+    }
 
     // Cegah tombol back hardware/gesture kembali ke akun setelah logout
     BackHandler {
@@ -130,7 +165,9 @@ fun LoginScreen(
                     .padding(horizontal = 24.dp, vertical = 28.dp)
             ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
@@ -370,6 +407,53 @@ fun LoginScreen(
                             color = Color.White
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Divider Atau Masuk Dengan
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E5E5))
+                    Text(
+                        text = "atau masuk dengan",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E5E5))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Tombol Masuk dengan Google
+                OutlinedButton(
+                    onClick = {
+                        val signInIntent = GoogleAuthManager.getSignInIntent(context)
+                        googleSignInLauncher.launch(signInIntent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    border = BorderStroke(1.2.dp, Color(0xFFE0E0E0)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+                    enabled = authState !is AuthState.Loading
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = "Logo Google",
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Masuk dengan Google",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GearaDarkBrown
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

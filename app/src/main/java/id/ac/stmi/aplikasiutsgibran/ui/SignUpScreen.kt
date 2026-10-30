@@ -1,6 +1,11 @@
 package id.ac.stmi.aplikasiutsgibran.ui
 
+import android.app.Activity
 import android.app.DatePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,8 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
+import id.ac.stmi.aplikasiutsgibran.R
 import id.ac.stmi.aplikasiutsgibran.auth.AuthState
 import id.ac.stmi.aplikasiutsgibran.auth.AuthViewModel
+import id.ac.stmi.aplikasiutsgibran.auth.GoogleAuthManager
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaDarkBrown
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaOrange
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaYellow
@@ -59,6 +67,30 @@ fun SignUpScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val authState by authViewModel.authState.collectAsState()
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val parseResult = GoogleAuthManager.parseSignInResult(result.data)
+            parseResult.onSuccess { account ->
+                val emailAccount = account.email ?: ""
+                val nameAccount = account.displayName ?: "Pengguna Google"
+                val idToken = account.idToken
+                authViewModel.loginWithGoogle(emailAccount, nameAccount, idToken)
+            }.onFailure { ex ->
+                val msg = ex.message ?: "Gagal mendaftar dengan Google."
+                authViewModel.resetState()
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(msg)
+                }
+            }
+        } else if (result.resultCode != Activity.RESULT_CANCELED) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Pendaftaran Google dibatalkan.")
+            }
+        }
+    }
 
     // Native DatePickerDialog untuk kemudahan memilih tanggal lahir
     val calendar = Calendar.getInstance()
@@ -417,6 +449,53 @@ fun SignUpScreen(
                                 color = Color.White
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Divider Atau Daftar Dengan
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E5E5))
+                        Text(
+                            text = "atau daftar dengan",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E5E5))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Tombol Daftar dengan Google
+                    OutlinedButton(
+                        onClick = {
+                            val signInIntent = GoogleAuthManager.getSignInIntent(context)
+                            googleSignInLauncher.launch(signInIntent)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(26.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFFE0E0E0)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+                        enabled = authState !is AuthState.Loading
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_google_logo),
+                            contentDescription = "Logo Google",
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Daftar dengan Google",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = GearaDarkBrown
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
