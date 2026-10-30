@@ -88,9 +88,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.ai)
     
-    // Firebase Auth, Crashlytics, Analytics, Cloud Messaging & BOM
+    // Firebase Auth, Firestore, Crashlytics, Analytics, Cloud Messaging & BOM
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging)

@@ -3,13 +3,16 @@ package id.ac.stmi.aplikasiutsgibran.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import id.ac.stmi.aplikasiutsgibran.auth.SessionManager
 import id.ac.stmi.aplikasiutsgibran.data.remote.CreateOrderItemRequest
 import id.ac.stmi.aplikasiutsgibran.data.remote.CreateOrderRequest
+import id.ac.stmi.aplikasiutsgibran.data.remote.FirestoreSyncService
 import id.ac.stmi.aplikasiutsgibran.util.network.ConnectivityObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -34,7 +37,9 @@ sealed class CheckoutState {
 @HiltViewModel
 class GearaViewModel @Inject constructor(
     private val repository: GearaRepository,
-    private val connectivityObserver: ConnectivityObserver
+    private val connectivityObserver: ConnectivityObserver,
+    private val sessionManager: SessionManager,
+    private val firestoreSyncService: FirestoreSyncService
 ) : ViewModel() {
 
     // --- Pemantau Status Koneksi Jaringan Real-Time (Offline UX) ---
@@ -163,7 +168,16 @@ class GearaViewModel @Inject constructor(
                 } else {
                     _cartItems.value = localCart
                 }
+
+                // Sinkronkan data keranjang ke Cloud Firestore jika user aktif
+                val uid = sessionManager.userId.first()
+                firestoreSyncService.syncCart(uid, _cartItems.value)
             }
+        }
+
+        // Seeding awal katalog produk ke Cloud Firestore (jika koleksi products di Firestore masih kosong)
+        viewModelScope.launch {
+            firestoreSyncService.seedInitialProducts(GearaRepository.products)
         }
     }
 
@@ -293,6 +307,17 @@ class GearaViewModel @Inject constructor(
                 repository.clearSelectedCartInRoom()
                 _appliedVoucher.value = null
                 
+                // Sinkronkan order baru ke Cloud Firestore
+                val currentUserId = sessionManager.userId.first()
+                val currentUserName = sessionManager.userName.first()
+                val currentUserEmail = sessionManager.userEmail.first()
+                firestoreSyncService.syncOrder(
+                    order = serverOrder,
+                    userId = currentUserId,
+                    userEmail = currentUserEmail,
+                    userName = currentUserName
+                )
+
                 _checkoutState.value = CheckoutState.Success(serverOrder.id)
             } else {
                 // Fallback offline jika server backend lokal belum dinyalakan:
@@ -359,6 +384,18 @@ class GearaViewModel @Inject constructor(
                 _cartItems.update { current -> current.filterNot { it.selected } }
                 repository.clearSelectedCartInRoom()
                 _appliedVoucher.value = null
+
+                // Sinkronkan order baru ke Cloud Firestore
+                val currentUserId = sessionManager.userId.first()
+                val currentUserName = sessionManager.userName.first()
+                val currentUserEmail = sessionManager.userEmail.first()
+                firestoreSyncService.syncOrder(
+                    order = fallbackOrder,
+                    userId = currentUserId,
+                    userEmail = currentUserEmail,
+                    userName = currentUserName
+                )
+
                 _checkoutState.value = CheckoutState.Success(fallbackOrder.id)
             }
         }
@@ -379,6 +416,8 @@ class GearaViewModel @Inject constructor(
                             if (o.id == orderId) o.copy(status = OrderStatus.PACKED) else o
                         }
                     }
+                    val currentUserId = sessionManager.userId.first()
+                    firestoreSyncService.updateOrderStatus(orderId, OrderStatus.PACKED, currentUserId)
                     onPaid()
                 }
             }
@@ -395,6 +434,8 @@ class GearaViewModel @Inject constructor(
                 }
                 // Refresh notifications
                 _notifications.value = repository.getNotificationsFromApi()
+                val currentUserId = sessionManager.userId.first()
+                firestoreSyncService.updateOrderStatus(orderId, OrderStatus.PACKED, currentUserId)
                 onPaid()
             } else {
                 // Offline fallback simulation
@@ -403,6 +444,8 @@ class GearaViewModel @Inject constructor(
                         if (o.id == orderId) o.copy(status = OrderStatus.PACKED) else o
                     }
                 }
+                val currentUserId = sessionManager.userId.first()
+                firestoreSyncService.updateOrderStatus(orderId, OrderStatus.PACKED, currentUserId)
                 onPaid()
             }
         }
@@ -411,6 +454,10 @@ class GearaViewModel @Inject constructor(
     fun updateOrderStatus(orderId: String, newStatus: OrderStatus) {
         _orders.update { list ->
             list.map { if (it.id == orderId) it.copy(status = newStatus) else it }
+        }
+        viewModelScope.launch {
+            val currentUserId = sessionManager.userId.first()
+            firestoreSyncService.updateOrderStatus(orderId, newStatus, currentUserId)
         }
     }
 
@@ -432,6 +479,10 @@ class GearaViewModel @Inject constructor(
                     )
                 } else order
             }
+        }
+        viewModelScope.launch {
+            val currentUserId = sessionManager.userId.first()
+            firestoreSyncService.updateOrderStatus(orderId, OrderStatus.SHIPPED, currentUserId)
         }
     }
 

@@ -7,6 +7,7 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import id.ac.stmi.aplikasiutsgibran.data.GearaRepository
+import id.ac.stmi.aplikasiutsgibran.data.remote.FirestoreSyncService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +24,8 @@ sealed class AuthState {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     val sessionManager: SessionManager,
-    val repository: GearaRepository
+    val repository: GearaRepository,
+    val firestoreSyncService: FirestoreSyncService
 ) : ViewModel() {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -113,13 +115,20 @@ class AuthViewModel @Inject constructor(
                             val userEmail = firebaseUser.email ?: email
 
                             viewModelScope.launch {
+                                val phoneNum = if (!isEmail) originalInput else "0812-3456-7890"
                                 sessionManager.saveSession(
                                     isLoggedIn = true,
                                     userId = firebaseUser.uid,
                                     name = displayName,
                                     email = userEmail,
-                                    phone = if (!isEmail) originalInput else "0812-3456-7890",
+                                    phone = phoneNum,
                                     token = jwtToken
+                                )
+                                firestoreSyncService.syncUserProfile(
+                                    userId = firebaseUser.uid,
+                                    name = displayName,
+                                    email = userEmail,
+                                    phone = phoneNum
                                 )
                                 syncFcmToken(firebaseUser.uid, userEmail)
                             }
@@ -212,6 +221,12 @@ class AuthViewModel @Inject constructor(
                             phone = cleanPhone,
                             token = "JWT-FIREBASE-$uid"
                         )
+                        firestoreSyncService.syncUserProfile(
+                            userId = uid,
+                            name = cleanName,
+                            email = cleanEmail,
+                            phone = cleanPhone
+                        )
                         syncFcmToken(uid, cleanEmail)
                     }
                     _authState.value = AuthState.Success("Registrasi Berhasil! Akun $cleanName telah terdaftar di database Firebase.")
@@ -289,6 +304,12 @@ class AuthViewModel @Inject constructor(
                                 phone = "0812-3456-7890",
                                 token = jwtToken
                             )
+                            firestoreSyncService.syncUserProfile(
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890"
+                            )
                             syncFcmToken(finalUid, finalEmail)
                             _authState.value = AuthState.Success("Berhasil masuk melalui Google ($finalEmail).")
                         }
@@ -301,6 +322,12 @@ class AuthViewModel @Inject constructor(
                                 email = finalEmail,
                                 phone = "0812-3456-7890",
                                 token = idToken
+                            )
+                            firestoreSyncService.syncUserProfile(
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890"
                             )
                             syncFcmToken(finalUid, finalEmail)
                             _authState.value = AuthState.Success("Berhasil masuk melalui Google ($finalEmail).")
@@ -321,6 +348,12 @@ class AuthViewModel @Inject constructor(
                     email = email,
                     phone = "0812-3456-7890",
                     token = "JWT-GOOGLE-${System.currentTimeMillis()}"
+                )
+                firestoreSyncService.syncUserProfile(
+                    userId = uid,
+                    name = name,
+                    email = email,
+                    phone = "0812-3456-7890"
                 )
                 syncFcmToken(uid, email)
                 _authState.value = AuthState.Success("Berhasil masuk melalui Google ($email).")
