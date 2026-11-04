@@ -38,7 +38,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Firebase Cloud Messaging Service (Push Notifications) -->
+        <!-- Firebase cloud messaging service (push notifications) -->
         <service
             android:name=".fcm.GearaFirebaseMessagingService"
             android:exported="false">
