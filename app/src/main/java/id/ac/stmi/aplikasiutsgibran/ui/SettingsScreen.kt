@@ -1,5 +1,6 @@
 package id.ac.stmi.aplikasiutsgibran.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,22 +18,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import id.ac.stmi.aplikasiutsgibran.auth.AuthViewModel
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaDarkBrown
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaOrange
 import id.ac.stmi.aplikasiutsgibran.ui.theme.GearaYellow
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(navController: NavController) {
+fun SettingsScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
     var pushNotificationEnabled by remember { mutableStateOf(true) }
     var promoNotificationEnabled by remember { mutableStateOf(true) }
     var soundEnabled by remember { mutableStateOf(true) }
 
     var showClearCacheDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var cacheSize by remember { mutableStateOf("24.8 MB") }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -174,10 +183,81 @@ fun SettingsScreen(navController: NavController) {
                         }
                     )
 
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // SECTION 4: Akun & Sesi
+                    Text(
+                        text = "Akun & Sesi",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD32F2F)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = { showLogoutDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEE)),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFCDD2))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = null,
+                            tint = Color(0xFFD32F2F),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Keluar dari Akun",
+                            color = Color(0xFFD32F2F),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(text = "Konfirmasi Keluar", fontWeight = FontWeight.Bold, color = GearaDarkBrown)
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin keluar dari akun? Kredensial akun Google Anda akan dibersihkan sehingga Anda dapat bebas memilih akun Google mana pun saat login berikutnya.",
+                    fontSize = 13.sp,
+                    color = Color.DarkGray
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        authViewModel.logout(context) {
+                            navController.navigate("login") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) {
+                    Text("Keluar", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 
     if (showClearCacheDialog) {

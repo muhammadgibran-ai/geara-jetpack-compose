@@ -158,6 +158,40 @@ class FirestoreSyncService @Inject constructor(
     }
 
     /**
+     * Memeriksa apakah akun pengguna sudah pernah terdaftar di Firestore.
+     * Pengecekan dilakukan berdasarkan ID pengguna (UID) dan/atau alamat email.
+     */
+    suspend fun isUserRegistered(
+        userId: String = "",
+        email: String = ""
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            if (userId.isNotBlank() && userId != "user_default") {
+                val doc = firestore.collection(COLLECTION_USERS).document(userId).get().await()
+                if (doc.exists()) {
+                    Log.d(TAG, "Pengguna ditemukan di Firestore berdasarkan UID: $userId")
+                    return@withContext true
+                }
+            }
+            if (email.isNotBlank()) {
+                val querySnapshot = firestore.collection(COLLECTION_USERS)
+                    .whereEqualTo("email", email.trim())
+                    .limit(1)
+                    .get()
+                    .await()
+                if (!querySnapshot.isEmpty) {
+                    Log.d(TAG, "Pengguna ditemukan di Firestore berdasarkan email: $email")
+                    return@withContext true
+                }
+            }
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saat memeriksa status pendaftaran pengguna di Firestore: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
      * Menyinkronkan item keranjang user ke /users/{userId}/cart/items
      */
     suspend fun syncCart(

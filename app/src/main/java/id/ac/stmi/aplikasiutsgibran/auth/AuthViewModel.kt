@@ -1,17 +1,20 @@
 package id.ac.stmi.aplikasiutsgibran.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import id.ac.stmi.aplikasiutsgibran.data.GearaRepository
 import id.ac.stmi.aplikasiutsgibran.data.remote.FirestoreSyncService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 sealed class AuthState {
@@ -19,13 +22,15 @@ sealed class AuthState {
     data object Loading : AuthState()
     data class Success(val message: String) : AuthState()
     data class Error(val message: String) : AuthState()
+    data class AccountAlreadyExists(val email: String, val name: String) : AuthState()
 }
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     val sessionManager: SessionManager,
     val repository: GearaRepository,
-    val firestoreSyncService: FirestoreSyncService
+    val firestoreSyncService: FirestoreSyncService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -232,12 +237,17 @@ class AuthViewModel @Inject constructor(
                     _authState.value = AuthState.Success("Registrasi Berhasil! Akun $cleanName telah terdaftar di database Firebase.")
                 } else {
                     val ex = task.exception
+                    val isEmailInUse = ex?.message?.contains("email-already-in-use", ignoreCase = true) == true ||
+                                       ex?.message?.contains("already in use", ignoreCase = true) == true
+
+                    if (isEmailInUse) {
+                        _authState.value = AuthState.AccountAlreadyExists(cleanEmail, cleanName)
+                        return@addOnCompleteListener
+                    }
+
                     val errorMsg = when {
                         ex?.message?.contains("CONFIGURATION_NOT_FOUND", ignoreCase = true) == true ->
                             "Layanan Email/Password belum diaktifkan di Firebase Console. Silakan buka Firebase Console -> Authentication -> Sign-in method -> aktifkan Email/Password."
-                        ex?.message?.contains("email-already-in-use", ignoreCase = true) == true ||
-                        ex?.message?.contains("already in use", ignoreCase = true) == true ->
-                            "Email '$cleanEmail' sudah terdaftar di Firebase. Silakan langsung masuk di menu Login."
                         ex?.message?.contains("weak-password", ignoreCase = true) == true ->
                             "Kata sandi terlalu lemah. Gunakan minimal 6 karakter kombinasi huruf dan angka."
                         ex?.message?.contains("network", ignoreCase = true) == true ->
@@ -266,15 +276,158 @@ class AuthViewModel @Inject constructor(
             }
     }
 
-    fun logout(onComplete: () -> Unit = {}) {
+    /**
+     * Logout / Keluar dari akun:
+     * - Mengeluarkan sesi dari Firebase Authentication.
+     * - Menghapus cache sesi dan kredensial login Google (GoogleAuthManager.signOut)
+     *   sehingga pengguna harus memilih/memasukkan akun Google baru dan tidak tersimpan otomatis.
+     * - Menghapus sesi lokal di SessionManager (DataStore).
+     */
+    fun logout(callerContext: Context? = null, onComplete: () -> Unit = {}) {
         try {
             auth.signOut()
         } catch (_: Exception) {}
 
-        viewModelScope.launch {
-            sessionManager.clearSession()
-            _authState.value = AuthState.Idle
-            onComplete()
+        val ctx = callerContext ?: context
+        GoogleAuthManager.signOut(ctx) {
+            viewModelScope.launch {
+                sessionManager.clearSession()
+                _authState.value = AuthState.Idle
+                onComplete()
+            }
+        }
+    }
+
+    /**
+     * Mendaftar akun baru melalui Google Sign-In:
+     * - Jika akun Google yang dipilih sudah pernah terdaftar di Firebase atau Firestore,
+     *   sistem membatalkan sesi dan memancarkan AuthState.AccountAlreadyExists agar
+     *   menampilkan dialog pop-up "Akun Sudah Terdaftar".
+     * - Jika belum terdaftar, akun baru dibuat dan langsung masuk ke aplikasi.
+     */
+    fun registerWithGoogle(
+        email: String,
+        name: String,
+        idToken: String? = null,
+        callerContext: Context? = null
+    ) {
+        _authState.value = AuthState.Loading
+        val ctx = callerContext ?: context
+
+        if (!idToken.isNullOrBlank()) {
+            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credential).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val authResult = task.result
+                    val firebaseUser = authResult?.user
+                    val additionalUserInfo = authResult?.additionalUserInfo
+                    val isNewUser = additionalUserInfo?.isNewUser == true
+                    val finalEmail = firebaseUser?.email ?: email
+                    val finalName = firebaseUser?.displayName ?: name
+                    val finalUid = firebaseUser?.uid ?: ""
+
+                    viewModelScope.launch {
+                        // Cek apakah akun ini sudah pernah terdaftar sebelumnya
+                        var alreadyExists = !isNewUser
+
+                        if (!alreadyExists && finalUid.isNotBlank()) {
+                            try {
+                                if (firestoreSyncService.isUserRegistered(finalUid, finalEmail)) {
+                                    alreadyExists = true
+                                }
+                            } catch (_: Exception) {}
+                        }
+
+                        if (alreadyExists) {
+                            // Akun sudah terdaftar!
+                            // Batalkan sesi Firebase dan Google agar kredensial tidak tertinggal
+                            try {
+                                auth.signOut()
+                            } catch (_: Exception) {}
+                            GoogleAuthManager.signOut(ctx)
+
+                            _authState.value = AuthState.AccountAlreadyExists(
+                                email = finalEmail,
+                                name = finalName
+                            )
+                        } else {
+                            // Akun baru, proses pendaftaran
+                            val jwtToken = try {
+                                firebaseUser?.getIdToken(false)?.await()?.token ?: idToken
+                            } catch (_: Exception) {
+                                idToken
+                            }
+
+                            sessionManager.saveSession(
+                                isLoggedIn = true,
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890",
+                                token = jwtToken
+                            )
+                            firestoreSyncService.syncUserProfile(
+                                userId = finalUid,
+                                name = finalName,
+                                email = finalEmail,
+                                phone = "0812-3456-7890"
+                            )
+                            syncFcmToken(finalUid, finalEmail)
+                            _authState.value = AuthState.Success("Pendaftaran Berhasil! Selamat datang di Geara, $finalName.")
+                        }
+                    }
+                } else {
+                    val ex = task.exception
+                    val msg = ex?.message ?: ""
+                    if (ex is com.google.firebase.auth.FirebaseAuthUserCollisionException ||
+                        msg.contains("already in use", ignoreCase = true) ||
+                        msg.contains("email-already-in-use", ignoreCase = true) ||
+                        msg.contains("account-exists-with-different-credential", ignoreCase = true)
+                    ) {
+                        try {
+                            auth.signOut()
+                        } catch (_: Exception) {}
+                        GoogleAuthManager.signOut(ctx)
+
+                        _authState.value = AuthState.AccountAlreadyExists(
+                            email = email,
+                            name = name
+                        )
+                    } else {
+                        _authState.value = AuthState.Error(ex?.localizedMessage ?: "Pendaftaran dengan Google gagal.")
+                    }
+                }
+            }
+        } else {
+            // Jalur fallback simulasi offline/lokal jika idToken kosong
+            viewModelScope.launch {
+                val exists = firestoreSyncService.isUserRegistered("", email)
+                if (exists) {
+                    GoogleAuthManager.signOut(ctx)
+                    _authState.value = AuthState.AccountAlreadyExists(
+                        email = email,
+                        name = name
+                    )
+                } else {
+                    val uid = "google_${System.currentTimeMillis()}"
+                    sessionManager.saveSession(
+                        isLoggedIn = true,
+                        userId = uid,
+                        name = name,
+                        email = email,
+                        phone = "0812-3456-7890",
+                        token = "JWT-GOOGLE-${System.currentTimeMillis()}"
+                    )
+                    firestoreSyncService.syncUserProfile(
+                        userId = uid,
+                        name = name,
+                        email = email,
+                        phone = "0812-3456-7890"
+                    )
+                    syncFcmToken(uid, email)
+                    _authState.value = AuthState.Success("Pendaftaran Berhasil! Selamat datang di Geara, $name.")
+                }
+            }
         }
     }
 

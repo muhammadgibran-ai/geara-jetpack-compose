@@ -64,7 +64,19 @@ object GoogleAuthManager {
     }
 
     fun signOut(context: Context, onComplete: () -> Unit = {}) {
-        getGoogleSignInClient(context).signOut().addOnCompleteListener {
+        try {
+            val client = getGoogleSignInClient(context)
+            client.signOut().addOnCompleteListener {
+                try {
+                    // Revoke access agar kredensial otorisasi akun Google tidak tersimpan/ter-cache,
+                    // sehingga pengguna dapat bebas memilih akun Google mana pun saat login berikutnya.
+                    client.revokeAccess()
+                } catch (_: Exception) {}
+                onComplete()
+            }.addOnFailureListener {
+                onComplete()
+            }
+        } catch (_: Exception) {
             onComplete()
         }
     }

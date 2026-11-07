@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -55,6 +56,10 @@ fun SignUpScreen(
     var phone by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
 
+    // Dialog state saat akun sudah terdaftar
+    var showAlreadyRegisteredDialog by remember { mutableStateOf(false) }
+    var existingAccountEmail by remember { mutableStateOf("") }
+
     // Error states for user feedback
     var fullNameError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
@@ -77,7 +82,7 @@ fun SignUpScreen(
                 val emailAccount = account.email ?: ""
                 val nameAccount = account.displayName ?: "Pengguna Google"
                 val idToken = account.idToken
-                authViewModel.loginWithGoogle(emailAccount, nameAccount, idToken)
+                authViewModel.registerWithGoogle(emailAccount, nameAccount, idToken, context)
             }.onFailure { ex ->
                 val msg = ex.message ?: "Gagal mendaftar dengan Google."
                 authViewModel.resetState()
@@ -115,6 +120,12 @@ fun SignUpScreen(
                 navController.navigate("home") {
                     popUpTo(0) { inclusive = true }
                 }
+                authViewModel.resetState()
+            }
+            is AuthState.AccountAlreadyExists -> {
+                val state = authState as AuthState.AccountAlreadyExists
+                existingAccountEmail = state.email
+                showAlreadyRegisteredDialog = true
                 authViewModel.resetState()
             }
             is AuthState.Error -> {
@@ -473,8 +484,10 @@ fun SignUpScreen(
                     // Tombol Daftar dengan Google
                     OutlinedButton(
                         onClick = {
-                            val signInIntent = GoogleAuthManager.getSignInIntent(context)
-                            googleSignInLauncher.launch(signInIntent)
+                            GoogleAuthManager.signOut(context) {
+                                val signInIntent = GoogleAuthManager.getSignInIntent(context)
+                                googleSignInLauncher.launch(signInIntent)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -524,6 +537,101 @@ fun SignUpScreen(
                 }
             }
         }
+    }
+
+    // Dialog Pop-up: Akun Sudah Terdaftar
+    if (showAlreadyRegisteredDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAlreadyRegisteredDialog = false
+            },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFFF3E0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = GearaOrange,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = "Akun Sudah Terdaftar",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = GearaDarkBrown
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Akun Google yang Anda pilih sudah pernah terdaftar di aplikasi Geara:",
+                        fontSize = 14.sp,
+                        color = Color(0xFF555555),
+                        lineHeight = 20.sp
+                    )
+                    if (existingAccountEmail.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF5F5F5),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = existingAccountEmail,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = GearaDarkBrown,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Silakan masuk ke menu Login untuk melanjutkan belanja dengan akun Anda.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF666666)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAlreadyRegisteredDialog = false
+                        navController.navigate("login") {
+                            popUpTo("signup") { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GearaOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Ke Halaman Login",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showAlreadyRegisteredDialog = false
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Tutup", color = Color.Gray)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 }
 

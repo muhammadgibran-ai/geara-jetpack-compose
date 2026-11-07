@@ -431,8 +431,10 @@ fun LoginScreen(
                 // Tombol Masuk dengan Google
                 OutlinedButton(
                     onClick = {
-                        val signInIntent = GoogleAuthManager.getSignInIntent(context)
-                        googleSignInLauncher.launch(signInIntent)
+                        GoogleAuthManager.signOut(context) {
+                            val signInIntent = GoogleAuthManager.getSignInIntent(context)
+                            googleSignInLauncher.launch(signInIntent)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
