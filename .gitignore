@@ -33,3 +33,15 @@ UI-UX CRM SUKU CADANG/
 node_modules/
 server/node_modules/
 .env
+
+# Laporan Akademik & Script Generator Python (python-docx / Pillow)
+Laporan_*.docx
+Laporan_*.pdf
+*.docx
+*.pdf
+__pycache__/
+*.pyc
+report_assets/
+prepare_report_images.py
+generate_complete_report.py
+report_part_*.py
